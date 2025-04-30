@@ -50,7 +50,7 @@ export default function Meeting({ meetingId, user }: MeetingProps) {
   
   // Fetch meeting information
   const { data: meeting, isLoading, error } = useQuery<MeetingType>({
-    queryKey: ['/api/meetings', meetingId],
+    queryKey: ['/api/meetings', meetingId, Date.now()], // Add timestamp to prevent caching
     // In a real application this would fetch from the server
     // Currently simulating meeting data
     queryFn: async () => {
