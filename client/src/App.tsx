@@ -9,11 +9,14 @@ import Meeting from "@/pages/Meeting";
 import CreateMeeting from "@/pages/CreateMeeting";
 import { useEffect, useState } from "react";
 
+import { User } from "@shared/schema";
+
 // Mock user for now - in a real app, this would come from authentication
-const MOCK_USER = {
+const MOCK_USER: User = {
   id: 1,
   username: "testuser",
-  displayName: "Test User"
+  displayName: "Test User",
+  password: "password" // Required by User type
 };
 
 function Router() {
@@ -36,7 +39,7 @@ function App() {
     // Simulate loading necessary resources
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 1000);
+    }, 500); // Reduced timeout for faster testing
     
     return () => clearTimeout(timer);
   }, []);

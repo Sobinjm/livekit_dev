@@ -5,21 +5,33 @@ export function useWebSocket(meetingId: string, userId: number) {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const RECONNECT_DELAY = 2000; // 2 seconds
   
-  useEffect(() => {
+  // Function to create and set up a WebSocket connection
+  const setupWebSocket = () => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      return; // Already connected
+    }
+    
     // Set up WebSocket connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    // Make sure to use the correct port for the WebSocket connection
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws`;
     
     try {
-      console.log('Connecting to WebSocket at:', wsUrl);
+      console.log(`Connecting to WebSocket at: ${wsUrl} (Attempt ${reconnectAttemptsRef.current + 1})`);
       const socket = new WebSocket(wsUrl);
       socketRef.current = socket;
       
       // Connection opened
       socket.addEventListener('open', () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connected successfully');
         setIsConnected(true);
+        reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
         
         // Join the meeting
         const joinMessage = {
@@ -41,44 +53,76 @@ export function useWebSocket(meetingId: string, userId: number) {
       
       // Listen for messages
       socket.addEventListener('message', (event: MessageEvent) => {
-        const data = JSON.parse(event.data);
-        
-        switch (data.type) {
-          case 'chat_message':
-            const message: ChatMessage = {
-              id: data.payload.id,
-              senderId: data.payload.senderId,
-              senderName: data.payload.senderId === userId ? 'You' : 'Other User', // In a real app, this would be the actual username
-              content: data.payload.content,
-              timestamp: new Date(data.payload.sentAt)
-            };
-            
-            setMessages(prev => [...prev, message]);
-            break;
-            
-          case 'participant_joined':
-            console.log('Participant joined:', data.payload);
-            break;
-            
-          case 'participant_left':
-            console.log('Participant left:', data.payload);
-            break;
-            
-          case 'error':
-            console.error('WebSocket error:', data.payload);
-            break;
+        try {
+          const data = JSON.parse(event.data);
+          
+          switch (data.type) {
+            case 'chat_message':
+              const message: ChatMessage = {
+                id: data.payload.id,
+                senderId: data.payload.senderId,
+                senderName: data.payload.senderId === userId ? 'You' : 'Other User', // In a real app, this would be the actual username
+                content: data.payload.content,
+                timestamp: new Date(data.payload.sentAt)
+              };
+              
+              setMessages(prev => [...prev, message]);
+              break;
+              
+            case 'participant_joined':
+              console.log('Participant joined:', data.payload);
+              break;
+              
+            case 'participant_left':
+              console.log('Participant left:', data.payload);
+              break;
+              
+            case 'error':
+              console.error('WebSocket error:', data.payload);
+              break;
+          }
+        } catch (parseErr) {
+          console.error('Error parsing WebSocket message:', parseErr);
         }
       });
       
       // Connection closed
       socket.addEventListener('close', (event: CloseEvent) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
+        console.log(`WebSocket disconnected: Code ${event.code}, Reason: ${event.reason || 'None'}`);
         setIsConnected(false);
+        
+        // Attempt to reconnect if not closing intentionally and haven't exceeded max attempts
+        const wasIntentionallyClosed = event.code === 1000; // Normal closure
+        if (!wasIntentionallyClosed && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttemptsRef.current++;
+          console.log(`Scheduling reconnect attempt ${reconnectAttemptsRef.current} in ${RECONNECT_DELAY}ms`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            setupWebSocket();
+          }, RECONNECT_DELAY);
+        } else if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+          console.error('Max reconnect attempts reached. Giving up.');
+        }
       });
+    } catch (err) {
+      console.error('Error creating WebSocket connection:', err);
+    }
+  };
+  
+  useEffect(() => {
+    // Initial connection setup
+    setupWebSocket();
+    
+    // Clean up on unmount
+    return () => {
+      // Clear any pending reconnect timeouts
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       
-      // Clean up on unmount
-      return () => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
+      // Close the WebSocket if open
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        try {
           // Send leave message
           const leaveMessage = {
             type: 'leave',
@@ -88,14 +132,14 @@ export function useWebSocket(meetingId: string, userId: number) {
             }
           };
           
-          socket.send(JSON.stringify(leaveMessage));
-          socket.close();
+          socketRef.current.send(JSON.stringify(leaveMessage));
+        } catch (e) {
+          console.error('Error sending leave message:', e);
         }
-      };
-    } catch (err) {
-      console.error('Error creating WebSocket connection:', err);
-      return () => {}; // Empty cleanup function
-    }
+        
+        socketRef.current.close();
+      }
+    };
   }, [meetingId, userId]);
   
   // Function to send chat messages

@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { v4 as uuidv4 } from "uuid";
+import { AccessToken } from "livekit-server-sdk";
 import { insertMeetingSchema, insertMessageSchema, insertParticipantSchema } from "@shared/schema";
 
 interface WSMessage {
@@ -20,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const connections: Record<string, WebSocket[]> = {};
   
   wss.on('connection', (ws: WebSocket) => {
-    let meetingId: string | null = null;
+    let meetingId: string = '';
     
     ws.on('message', async (message: string) => {
       try {
@@ -248,6 +249,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       res.status(400).json({ message: 'Invalid data' });
+    }
+  });
+  
+  // Generate LiveKit token for video conference
+  app.post('/api/meetings/:meetingId/token', async (req, res) => {
+    try {
+      const { meetingId } = req.params;
+      const { userId, username } = req.body;
+      
+      // Check if meeting exists
+      const meeting = await storage.getMeetingByMeetingId(meetingId);
+      if (!meeting) {
+        return res.status(404).json({ message: 'Meeting not found' });
+      }
+      
+      // Check if user is a participant
+      const participant = await storage.getParticipant(meetingId, userId);
+      if (!participant) {
+        return res.status(403).json({ message: 'User is not a participant in this meeting' });
+      }
+      
+      // In a production app, these would be set via environment variables
+      const apiKey = 'devkey';
+      const apiSecret = 'secret';
+      
+      // Create token
+      const at = new AccessToken(apiKey, apiSecret, {
+        identity: userId.toString(),
+        name: username
+      });
+      
+      // Give permissions based on whether user is host
+      at.addGrant({
+        roomJoin: true,
+        room: meetingId,
+        canPublish: true,
+        canSubscribe: true,
+        canPublishData: true
+      });
+      
+      const token = at.toJwt();
+      res.json({ token });
+      
+    } catch (error) {
+      console.error('Error generating token:', error);
+      res.status(400).json({ message: 'Failed to generate token' });
     }
   });
   
