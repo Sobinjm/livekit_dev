@@ -11,54 +11,61 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  username      String         @unique
-  name          String
-  email         String         @unique
-  password      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  meetings      Meeting[]      @relation("UserToMeeting")
-  participants  Participant[]
-  messages      Message[]
+  id          Int           @id @default(autoincrement())
+  username    String        @unique
+  password    String
+  display_name String
+  email       String?       @unique
+  created_at  DateTime?     @default(now())
+  updated_at  DateTime?     @updatedAt
+  meetings    Meeting[]     @relation("UserToMeeting")
+  participants Participant[]
+  messages    Message[]
+
+  @@map("users")
 }
 
 model Meeting {
-  id              Int            @id @default(autoincrement())
-  meetingId       String         @unique
-  title           String
-  description     String?
-  startTime       DateTime
-  endTime         DateTime?
-  isRecording     Boolean        @default(false)
-  recordingUrl    String?
-  createdById     Int
-  createdBy       User           @relation("UserToMeeting", fields: [createdById], references: [id])
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  participants    Participant[]
-  messages        Message[]
+  id           Int           @id @default(autoincrement())
+  meeting_id   String        @unique @map("meeting_id")
+  name         String        @map("name")
+  description  String?
+  start_time   DateTime?     @default(now())
+  end_time     DateTime?
+  is_recording Boolean       @default(false) @map("is_recording")
+  recording_url String?
+  created_by   Int           @map("created_by")
+  creator      User          @relation("UserToMeeting", fields: [created_by], references: [id])
+  created_at   DateTime?     @default(now()) @map("created_at")
+  updated_at   DateTime?     @updatedAt
+  participants Participant[]
+  messages     Message[]
+
+  @@map("meetings")
 }
 
 model Participant {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  meetingId   String
-  isHost      Boolean  @default(false)
-  joinedAt    DateTime @default(now())
-  leftAt      DateTime?
-  user        User     @relation(fields: [userId], references: [id])
-  meeting     Meeting  @relation(fields: [meetingId], references: [meetingId])
+  id          Int       @id @default(autoincrement())
+  user_id     Int       @map("user_id")
+  meeting_id  String    @map("meeting_id")
+  is_host     Boolean   @default(false) @map("is_host")
+  joined_at   DateTime  @default(now()) @map("joined_at")
+  left_at     DateTime?
+  user        User      @relation(fields: [user_id], references: [id])
+  meeting     Meeting   @relation(fields: [meeting_id], references: [meeting_id])
 
-  @@unique([userId, meetingId])
+  @@unique([user_id, meeting_id])
+  @@map("participants")
 }
 
 model Message {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   content     String
-  senderId    Int
-  meetingId   String
-  sentAt      DateTime @default(now())
-  sender      User     @relation(fields: [senderId], references: [id])
-  meeting     Meeting  @relation(fields: [meetingId], references: [meetingId])
+  sender_id   Int       @map("sender_id")
+  meeting_id  String    @map("meeting_id")
+  sent_at     DateTime  @default(now())
+  sender      User      @relation(fields: [sender_id], references: [id])
+  meeting     Meeting   @relation(fields: [meeting_id], references: [meeting_id])
+
+  @@map("messages")
 }
