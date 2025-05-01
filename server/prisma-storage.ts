@@ -274,7 +274,6 @@ async function ensureTestUser() {
         username: "testuser",
         password: "password123",
         display_name: "Test User",
-        email: "test@example.com",
       });
     }
   } catch (error) {
