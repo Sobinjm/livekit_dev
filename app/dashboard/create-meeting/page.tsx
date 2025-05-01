@@ -10,10 +10,8 @@ export default function CreateMeeting() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     description: "",
-    startTime: "",
-    duration: "60", // Default to 60 minutes
   });
 
   const handleChange = (
@@ -28,15 +26,10 @@ export default function CreateMeeting() {
     setIsLoading(true);
 
     try {
-      // Calculate end time based on duration
-      const startTime = new Date(formData.startTime);
-      const endTime = new Date(startTime.getTime() + parseInt(formData.duration) * 60000);
-
       const meetingData = {
-        title: formData.title,
+        name: formData.name,
         description: formData.description,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
+        created_by: 1, // Using test user ID
       };
 
       const response = await fetch("/api/meetings", {
@@ -59,7 +52,7 @@ export default function CreateMeeting() {
         description: "Your meeting has been successfully created.",
       });
 
-      router.push(`/dashboard/meetings/${result.id}`);
+      router.push(`/dashboard`);
     } catch (error) {
       toast({
         title: "Error",
@@ -96,15 +89,15 @@ export default function CreateMeeting() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <label
-                  htmlFor="title"
+                  htmlFor="name"
                   className="text-sm font-medium leading-none"
                 >
-                  Meeting Title <span className="text-destructive">*</span>
+                  Meeting Name <span className="text-destructive">*</span>
                 </label>
                 <input
-                  id="title"
-                  name="title"
-                  value={formData.title}
+                  id="name"
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   className="w-full rounded-md border bg-background px-3 py-2"
                   required
@@ -125,49 +118,6 @@ export default function CreateMeeting() {
                   onChange={handleChange}
                   className="w-full rounded-md border bg-background px-3 py-2 min-h-[100px]"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="startTime"
-                  className="text-sm font-medium leading-none"
-                >
-                  Start Time <span className="text-destructive">*</span>
-                </label>
-                <input
-                  id="startTime"
-                  name="startTime"
-                  type="datetime-local"
-                  value={formData.startTime}
-                  onChange={handleChange}
-                  className="w-full rounded-md border bg-background px-3 py-2"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="duration"
-                  className="text-sm font-medium leading-none"
-                >
-                  Duration (minutes) <span className="text-destructive">*</span>
-                </label>
-                <select
-                  id="duration"
-                  name="duration"
-                  value={formData.duration}
-                  onChange={handleChange}
-                  className="w-full rounded-md border bg-background px-3 py-2"
-                  required
-                >
-                  <option value="15">15 minutes</option>
-                  <option value="30">30 minutes</option>
-                  <option value="45">45 minutes</option>
-                  <option value="60">1 hour</option>
-                  <option value="90">1.5 hours</option>
-                  <option value="120">2 hours</option>
-                  <option value="180">3 hours</option>
-                </select>
               </div>
 
               <div className="flex justify-end gap-2">
