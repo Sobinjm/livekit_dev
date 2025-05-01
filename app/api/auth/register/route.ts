@@ -5,10 +5,10 @@ import bcrypt from "bcrypt";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, name, email, password } = body;
+    const { username, displayName, password } = body;
 
     // Validate required fields
-    if (!username || !name || !email || !password) {
+    if (!username || !displayName || !password) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
@@ -27,18 +27,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if email already exists
-    const existingEmail = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingEmail) {
-      return NextResponse.json(
-        { error: "Email already exists" },
-        { status: 400 }
-      );
-    }
-
     // Hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -47,8 +35,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.create({
       data: {
         username,
-        name,
-        email,
+        display_name: displayName,
         password: hashedPassword,
       },
     });

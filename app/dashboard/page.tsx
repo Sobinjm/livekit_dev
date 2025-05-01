@@ -6,39 +6,56 @@ import { Button } from "@/app/components/ui/button";
 
 interface Meeting {
   id: number;
-  meetingId: string;
-  title: string;
+  meeting_id: string;
+  name: string;
   description: string | null;
-  startTime: Date;
-  createdAt: Date;
+  is_recording: boolean;
+  created_by: number;
+  created_at: Date;
+  creator?: {
+    id: number;
+    display_name: string;
+    username: string;
+  };
 }
 
 // This would normally be fetched from the server
 const MOCK_MEETINGS: Meeting[] = [
   {
     id: 1,
-    meetingId: "abc-123-xyz",
-    title: "Weekly Team Sync",
+    meeting_id: "abc-123-xyz",
+    name: "Weekly Team Sync",
     description: "Weekly team synchronization meeting",
-    startTime: new Date(),
-    createdAt: new Date(),
+    is_recording: false,
+    created_by: 1,
+    created_at: new Date(),
+    creator: {
+      id: 1,
+      display_name: "Test User",
+      username: "testuser"
+    }
   },
   {
     id: 2,
-    meetingId: "def-456-uvw",
-    title: "Product Planning",
+    meeting_id: "def-456-uvw",
+    name: "Product Planning",
     description: "Discuss upcoming product features",
-    startTime: new Date(Date.now() + 86400000), // tomorrow
-    createdAt: new Date(),
+    is_recording: false,
+    created_by: 1,
+    created_at: new Date(),
+    creator: {
+      id: 1,
+      display_name: "Test User",
+      username: "testuser"
+    }
   },
 ];
 
 // This would normally be fetched from the server
 const MOCK_USER = {
   id: 1,
-  name: "Test User",
+  display_name: "Test User",
   username: "testuser",
-  email: "test@example.com",
 };
 
 export default function Dashboard() {
@@ -89,16 +106,16 @@ export default function Dashboard() {
                     key={meeting.id}
                     className="bg-card rounded-lg border p-4 shadow-sm"
                   >
-                    <h3 className="text-xl font-semibold">{meeting.title}</h3>
+                    <h3 className="text-xl font-semibold">{meeting.name}</h3>
                     <p className="text-muted-foreground mb-2">
                       {meeting.description}
                     </p>
                     <p className="text-sm mb-4">
-                      {formatDate(meeting.startTime)}
+                      {formatDate(meeting.created_at)}
                     </p>
                     <div className="flex gap-2">
                       <Button asChild size="sm">
-                        <Link href={`/meeting/${meeting.meetingId}`}>
+                        <Link href={`/meeting/${meeting.meeting_id}`}>
                           Join Meeting
                         </Link>
                       </Button>
