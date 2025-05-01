@@ -80,7 +80,7 @@ export default function Dashboard() {
             <span className="text-primary">Video Conference App</span>
           </div>
           <div className="flex items-center gap-4">
-            <span>Welcome, {MOCK_USER.name}</span>
+            <span>Welcome, {MOCK_USER.display_name}</span>
             <Button asChild variant="outline">
               <Link href="/auth/logout">Logout</Link>
             </Button>
