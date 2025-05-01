@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
     // For now, we'll just return all meetings
     const meetings = await prisma.meeting.findMany({
       include: {
-        createdBy: {
+        creator: {
           select: {
             id: true,
-            name: true,
+            display_name: true,
             username: true,
           },
         },
@@ -31,12 +31,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, startTime, endTime } = body;
+    const { title, description, startTime } = body;
 
     // Validate required fields
-    if (!title || !startTime) {
+    if (!title) {
       return NextResponse.json(
-        { error: "Title and start time are required" },
+        { error: "Title is required" },
         { status: 400 }
       );
     }
@@ -46,26 +46,25 @@ export async function POST(request: NextRequest) {
     const userId = 1;
 
     // Generate a unique meeting ID
-    const meetingId = uuidv4();
+    const meeting_id = uuidv4().substring(0, 8);
 
     // Create the meeting
     const meeting = await prisma.meeting.create({
       data: {
-        meetingId,
-        title,
+        meeting_id,
+        name: title,
         description,
-        startTime: new Date(startTime),
-        endTime: endTime ? new Date(endTime) : null,
-        createdById: userId,
+        created_by: userId,
+        is_recording: false,
       },
     });
 
     // Add the creator as a participant and host
     await prisma.participant.create({
       data: {
-        userId,
-        meetingId: meeting.meetingId,
-        isHost: true,
+        user_id: userId,
+        meeting_id: meeting.meeting_id,
+        is_host: true,
       },
     });
 

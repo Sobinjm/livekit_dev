@@ -13,24 +13,23 @@ interface WSMessage {
 
 // Zod schemas for validation
 const meetingSchema = z.object({
-  meetingId: z.string().optional(),
-  title: z.string(),
+  meeting_id: z.string().optional(),
+  name: z.string(),
   description: z.string().optional().nullable(),
-  startTime: z.coerce.date(),
-  endTime: z.coerce.date().optional().nullable(),
-  createdById: z.number(),
-  isRecording: z.boolean().optional().default(false),
+  created_at: z.coerce.date().optional().default(new Date()),
+  created_by: z.number(),
+  is_recording: z.boolean().optional().default(false),
 });
 
 const participantSchema = z.object({
-  meetingId: z.string(),
-  userId: z.number(),
-  isHost: z.boolean().optional().default(false),
+  meeting_id: z.string(),
+  user_id: z.number(),
+  is_host: z.boolean().optional().default(false),
 });
 
 const messageSchema = z.object({
-  meetingId: z.string(),
-  senderId: z.number(),
+  meeting_id: z.string(),
+  sender_id: z.number(),
   content: z.string(),
 });
 
@@ -72,8 +71,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (meetingId && data.payload.message && data.payload.senderId) {
               // Store the message
               const messageData = {
-                meetingId,
-                senderId: data.payload.senderId,
+                meeting_id: meetingId,
+                sender_id: data.payload.senderId,
                 content: data.payload.message
               };
               
@@ -86,9 +85,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   type: 'chat_message',
                   payload: {
                     id: savedMessage.id,
-                    senderId: savedMessage.senderId,
+                    senderId: savedMessage.sender_id,
                     content: savedMessage.content,
-                    sentAt: savedMessage.sentAt
+                    sentAt: savedMessage.sent_at
                   }
                 });
               } catch (error) {
@@ -153,10 +152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a meeting
   app.post('/api/meetings', async (req, res) => {
     try {
-      const meetingId = uuidv4().substring(0, 8);
+      const meeting_id = uuidv4().substring(0, 8);
       const meetingData = {
         ...req.body,
-        meetingId
+        meeting_id
       };
       
       const parsedMeeting = meetingSchema.parse(meetingData);
@@ -164,9 +163,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add creator as a participant and host
       const participantData = {
-        meetingId: meeting.meetingId,
-        userId: meeting.createdById,
-        isHost: true
+        meeting_id: meeting.meeting_id,
+        user_id: meeting.created_by,
+        is_host: true
       };
       
       const parsedParticipant = participantSchema.parse(participantData);
@@ -221,9 +220,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add user as participant
       const participantData = {
-        meetingId,
-        userId,
-        isHost: false
+        meeting_id: meetingId,
+        user_id: userId,
+        is_host: false
       };
       
       const parsedParticipant = participantSchema.parse(participantData);
@@ -262,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user is host
       const participant = await storage.getParticipant(meetingId, userId);
-      if (!participant || !participant.isHost) {
+      if (!participant || !participant.is_host) {
         return res.status(403).json({ message: 'Only meeting hosts can control recording' });
       }
       

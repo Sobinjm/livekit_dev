@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -24,12 +25,12 @@ model User {
 
 model Meeting {
   id           Int           @id @default(autoincrement())
-  meeting_id   String        @unique @map("meeting_id")
-  name         String        @map("name")
+  meeting_id   String        @unique
+  name         String        
   description  String?
-  is_recording Boolean       @default(false) @map("is_recording")
-  created_by   Int           @map("created_by")
-  created_at   DateTime?     @map("created_at")
+  is_recording Boolean       @default(false)
+  created_by   Int           
+  created_at   DateTime?     @default(now())
   creator      User          @relation("UserToMeeting", fields: [created_by], references: [id])
   participants Participant[]
   messages     Message[]
@@ -39,10 +40,10 @@ model Meeting {
 
 model Participant {
   id          Int       @id @default(autoincrement())
-  user_id     Int       @map("user_id")
-  meeting_id  String    @map("meeting_id")
-  is_host     Boolean   @default(false) @map("is_host")
-  joined_at   DateTime  @default(now()) @map("joined_at")
+  user_id     Int
+  meeting_id  String
+  is_host     Boolean   @default(false)
+  joined_at   DateTime  @default(now())
   user        User      @relation(fields: [user_id], references: [id])
   meeting     Meeting   @relation(fields: [meeting_id], references: [meeting_id])
 
@@ -53,8 +54,8 @@ model Participant {
 model Message {
   id          Int       @id @default(autoincrement())
   content     String
-  sender_id   Int       @map("sender_id")
-  meeting_id  String    @map("meeting_id")
+  sender_id   Int
+  meeting_id  String
   sent_at     DateTime  @default(now())
   sender      User      @relation(fields: [sender_id], references: [id])
   meeting     Meeting   @relation(fields: [meeting_id], references: [meeting_id])
