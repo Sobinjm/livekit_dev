@@ -15,9 +15,6 @@ model User {
   username    String        @unique
   password    String
   display_name String
-  email       String?       @unique
-  created_at  DateTime?     @default(now())
-  updated_at  DateTime?     @updatedAt
   meetings    Meeting[]     @relation("UserToMeeting")
   participants Participant[]
   messages    Message[]
@@ -30,14 +27,10 @@ model Meeting {
   meeting_id   String        @unique @map("meeting_id")
   name         String        @map("name")
   description  String?
-  start_time   DateTime?     @default(now())
-  end_time     DateTime?
   is_recording Boolean       @default(false) @map("is_recording")
-  recording_url String?
   created_by   Int           @map("created_by")
+  created_at   DateTime?     @map("created_at")
   creator      User          @relation("UserToMeeting", fields: [created_by], references: [id])
-  created_at   DateTime?     @default(now()) @map("created_at")
-  updated_at   DateTime?     @updatedAt
   participants Participant[]
   messages     Message[]
 
@@ -50,7 +43,6 @@ model Participant {
   meeting_id  String    @map("meeting_id")
   is_host     Boolean   @default(false) @map("is_host")
   joined_at   DateTime  @default(now()) @map("joined_at")
-  left_at     DateTime?
   user        User      @relation(fields: [user_id], references: [id])
   meeting     Meeting   @relation(fields: [meeting_id], references: [meeting_id])
 
