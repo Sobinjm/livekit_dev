@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  username      String         @unique
+  name          String
+  email         String         @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  meetings      Meeting[]      @relation("UserToMeeting")
+  participants  Participant[]
+  messages      Message[]
+}
+
+model Meeting {
+  id              Int            @id @default(autoincrement())
+  meetingId       String         @unique
+  title           String
+  description     String?
+  startTime       DateTime
+  endTime         DateTime?
+  isRecording     Boolean        @default(false)
+  recordingUrl    String?
+  createdById     Int
+  createdBy       User           @relation("UserToMeeting", fields: [createdById], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  participants    Participant[]
+  messages        Message[]
+}
+
+model Participant {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  meetingId   String
+  isHost      Boolean  @default(false)
+  joinedAt    DateTime @default(now())
+  leftAt      DateTime?
+  user        User     @relation(fields: [userId], references: [id])
+  meeting     Meeting  @relation(fields: [meetingId], references: [meetingId])
+
+  @@unique([userId, meetingId])
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  content     String
+  senderId    Int
+  meetingId   String
+  sentAt      DateTime @default(now())
+  sender      User     @relation(fields: [senderId], references: [id])
+  meeting     Meeting  @relation(fields: [meetingId], references: [meetingId])
+}
