@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
+import { Prisma } from '@prisma/client';
 
 export interface IStorage {
   // User methods
@@ -71,18 +72,18 @@ export class PrismaStorage implements IStorage {
   // Meeting methods
   async createMeeting(meetingData: any): Promise<any> {
     try {
-      // Ensure we have a meetingId
-      if (!meetingData.meetingId) {
-        meetingData.meetingId = uuidv4().substring(0, 8);
+      // Ensure we have a meeting_id
+      if (!meetingData.meeting_id) {
+        meetingData.meeting_id = uuidv4().substring(0, 8);
       }
       
       const meeting = await prisma.meeting.create({
         data: meetingData,
         include: {
-          createdBy: {
+          creator: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
@@ -100,10 +101,10 @@ export class PrismaStorage implements IStorage {
       const meeting = await prisma.meeting.findUnique({
         where: { id },
         include: {
-          createdBy: {
+          creator: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
@@ -119,12 +120,12 @@ export class PrismaStorage implements IStorage {
   async getMeetingByMeetingId(meetingId: string): Promise<any | undefined> {
     try {
       const meeting = await prisma.meeting.findUnique({
-        where: { meetingId },
+        where: { meeting_id: meetingId },
         include: {
-          createdBy: {
+          creator: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
@@ -140,8 +141,8 @@ export class PrismaStorage implements IStorage {
   async updateMeetingRecording(meetingId: string, isRecording: boolean): Promise<boolean> {
     try {
       const meeting = await prisma.meeting.update({
-        where: { meetingId },
-        data: { isRecording },
+        where: { meeting_id: meetingId },
+        data: { is_recording: isRecording },
       });
       return !!meeting;
     } catch (error) {
@@ -159,7 +160,7 @@ export class PrismaStorage implements IStorage {
           user: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
@@ -176,14 +177,14 @@ export class PrismaStorage implements IStorage {
     try {
       const participant = await prisma.participant.findFirst({
         where: {
-          meetingId,
-          userId,
+          meeting_id: meetingId,
+          user_id: userId,
         },
         include: {
           user: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
@@ -199,12 +200,12 @@ export class PrismaStorage implements IStorage {
   async getMeetingParticipants(meetingId: string): Promise<any[]> {
     try {
       const participants = await prisma.participant.findMany({
-        where: { meetingId },
+        where: { meeting_id: meetingId },
         include: {
           user: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
@@ -226,7 +227,7 @@ export class PrismaStorage implements IStorage {
           sender: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
@@ -242,17 +243,17 @@ export class PrismaStorage implements IStorage {
   async getMeetingMessages(meetingId: string): Promise<any[]> {
     try {
       const messages = await prisma.message.findMany({
-        where: { meetingId },
+        where: { meeting_id: meetingId },
         include: {
           sender: {
             select: {
               id: true,
-              name: true,
+              display_name: true,
               username: true,
             },
           },
         },
-        orderBy: { sentAt: 'asc' },
+        orderBy: { sent_at: 'asc' },
       });
       return messages;
     } catch (error) {
@@ -272,7 +273,7 @@ async function ensureTestUser() {
       await storage.createUser({
         username: "testuser",
         password: "password123",
-        name: "Test User",
+        display_name: "Test User",
         email: "test@example.com",
       });
     }
